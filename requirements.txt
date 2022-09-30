@@ -1,0 +1,4 @@
+torch
+torchvision
+numpy
+gym==0.24.1
