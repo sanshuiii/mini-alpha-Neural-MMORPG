@@ -86,13 +86,19 @@ class PPO_discrete:
         a = np.argmax(a_prob)
         return a
 
-    def choose_action(self, s):
-        s = torch.unsqueeze(torch.tensor(s, dtype=torch.float), 0)
+    def choose_action(self, s, single=True):
+        if single:
+            s = torch.unsqueeze(torch.tensor(s, dtype=torch.float), 0)
+        else:
+            s = torch.tensor(s, dtype=torch.float)
         with torch.no_grad():
             dist = Categorical(probs=self.actor(s))
             a = dist.sample()
             a_logprob = dist.log_prob(a)
-        return a.numpy()[0], a_logprob.numpy()[0]
+        if single:
+            return a.numpy()[0], a_logprob.numpy()[0]
+        else:
+            return a.numpy(), a_logprob.numpy()
 
     def update(self, replay_buffer, total_steps):
         s, a, a_logprob, r, s_, dw, done = replay_buffer.numpy_to_tensor()  # Get training data
@@ -136,7 +142,7 @@ class PPO_discrete:
                 self.optimizer_actor.step()
 
                 v_s = self.critic(s[index])
-                critic_loss = F.mse_loss(v_target[index], v_s)
+                critic_loss = F.mse_loss(v_s, v_target[index])
                 # Update critic
                 self.optimizer_critic.zero_grad()
                 critic_loss.backward()
