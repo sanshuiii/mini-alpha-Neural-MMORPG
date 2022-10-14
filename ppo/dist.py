@@ -104,6 +104,7 @@ class Agent:
         self.reset_env_and_state()
         
         while self.total_steps < self.args.max_train_steps:
+            # print(self.total_steps)
             self.train_step()
             
     def evaluate_step(self, ):
@@ -126,14 +127,14 @@ class Agent:
         futs = []
         for ob_rref, a in zip(self.ob_rrefs, actions):
             futs.append(ob_rref.rpc_async().env_step(a))
-            if self.total_steps // args.batch_size // 16 < len(futs): # TODO: add to args
-                pass #break
+            if self.total_steps // args.batch_size // 16 < len(futs): # delay the launch of observers at the beginning # TODO: add to args
+                break
             
         if replay_buffer.count >= args.batch_size: # TODO: chunk the size if count > batch_size
             self.agent.update(replay_buffer, self.total_steps)
             replay_buffer.count = 0 # TODO: chunk the size if count > batch_size
         
-        if (self.total_steps) % args.evaluate_freq < len(futs):#len(self.ob_rrefs):
+        if (self.total_steps) % args.evaluate_freq < len(futs): #len(self.ob_rrefs):
             self.evaluate_step()
             
         rets = torch.futures.wait_all(futs)
@@ -162,6 +163,7 @@ class Agent:
 class Observer:
     def __init__(self, env_name, seed):
         self.id = rpc.get_worker_info().id - 1
+        print(f"I'm Observer {self.id}")
         self.env_name = env_name
         self.seed = seed + self.id
         
@@ -229,22 +231,24 @@ def run_worker(rank, world_size, args, env_name, seed):
     rpc.shutdown()
 
 def launch(n_obs, args, env_name='CartPole-v1', seed=0):
-    world_size = n_obs + 1
-    print(f"###################### world_size: {world_size} ######################")
-    delays = []
-    tik = time.time()
-    mp.spawn(
-        run_worker,
-        args=(world_size, args, env_name, seed),
-        nprocs=world_size,
-        join=True
-    )
-    tok = time.time()
-    delays.append(tok - tik)
-    print(f"{world_size}, {delays[-1]}")
+    if 'SLURM_PROCID' in os.environ:
+        rank = int(os.environ['SLURM_PROCID'])
+        world_size = n_obs + 1
+        print(f"i'm rank {rank}")
+        if rank == 0:
+            print(f"###################### world_size: {world_size} ######################")
+        run_worker(rank, world_size, args, env_name, seed)
+    else:
+        world_size = n_obs + 1
+        print(f"###################### world_size: {world_size} ######################")
+        mp.spawn(
+            run_worker,
+            args=(world_size, args, env_name, seed),
+            nprocs=world_size,
+            join=True
+        )
 
-
-if __name__ == '__main__':
+if __name__ == '__main__' or True:
     # parser = argparse.ArgumentParser("Hyperparameter Setting for PPO-discrete")
     # parser.add_argument("--max_train_steps", type=int, default=int(2e5), help=" Maximum number of training steps")
     # parser.add_argument("--evaluate_freq", type=int, default=5e3, help="Evaluate the policy every 'evaluate_freq' steps")
@@ -280,5 +284,8 @@ if __name__ == '__main__':
     args = EasyDict(arg_file)
 
 
-    n_obs = 2
+    if 'SLURM_NPROCS' in os.environ:
+        n_obs = int(os.environ['SLURM_NPROCS']) - 1
+    else:
+        n_obs = 8
     launch(n_obs, args, env_name='CartPole-v1', seed=0)

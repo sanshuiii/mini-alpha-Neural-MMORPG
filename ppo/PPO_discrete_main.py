@@ -3,8 +3,8 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 import gym
 import argparse
-from NeurIPS22NMMO.ppo.utils.normalization import Normalization, RewardScaling
-from NeurIPS22NMMO.ppo.utils.replaybuffer import ReplayBuffer
+from utils.normalization import Normalization, RewardScaling
+from utils.replaybuffer import ReplayBuffer
 from ppo_discrete import PPO_discrete
 
 import yaml
@@ -59,7 +59,7 @@ def main(args, env_name, number, seed):
     agent = PPO_discrete(args)
 
     # Build a tensorboard
-    writer = SummaryWriter(log_dir='/hdd/yifan/nips22nmmo/NeurIPS22NMMO/ppo/runs/PPO_discrete/env_{}_number_{}_seed_{}'.format(env_name, number, seed))
+    writer = SummaryWriter(log_dir='runs/PPO_discrete/env_{}_number_{}_seed_{}'.format(env_name, number, seed))
 
     state_norm = Normalization(shape=args.state_dim)  # Trick 2:state normalization
     if args.use_reward_norm:  # Trick 3:reward normalization
@@ -113,7 +113,7 @@ def main(args, env_name, number, seed):
                 writer.add_scalar('step_rewards_{}'.format(env_name), evaluate_rewards[-1], global_step=total_steps)
                 # Save the rewards
                 if evaluate_num % args.save_freq == 0:
-                    np.save('/hdd/yifan/nips22nmmo/NeurIPS22NMMO/ppo/data/PPO_discrete_env_{}_number_{}_seed_{}.npy'.format(env_name, number, seed), np.array(evaluate_rewards))
+                    np.save('data/PPO_discrete_env_{}_number_{}_seed_{}.npy'.format(env_name, number, seed), np.array(evaluate_rewards))
 
 
 if __name__ == '__main__':
