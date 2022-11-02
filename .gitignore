@@ -165,3 +165,8 @@ data/
 checkpoints/
 runs/
 maps/
+IL/
+__pycache__/
+dataset/
+replay1000/
+replay.zip

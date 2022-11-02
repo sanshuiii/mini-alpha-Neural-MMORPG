@@ -21,6 +21,8 @@ use_orthogonal_init: True
 set_adam_eps: True
 use_tanh: True
 
+self_group_id : 15
+
 MODEL:
   ENCODER:
     ENTITY:
