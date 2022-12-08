@@ -17,7 +17,7 @@ advantage of resnet and transformer to encode the observations from both spatial
 aspects. After that, the encoded data will be fed into an LSTM to be combined with the historical data.
 And finally, action heads will decide according to all information mentioned above.
 
-[architecture.png](architecture.png)
+[!architecture.png](architecture.png)
 
 The whole training process consists of two stages: supervised learning and reinforcement learning. In
 the supervised learning stage, we train the model using game replays of rule-based agents to obtain a
